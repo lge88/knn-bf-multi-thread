@@ -16,11 +16,11 @@ function printUsageAndExit() {
 
 function knnBFSearch(query, records, topK) {
   let res = [];
-  records.forEach((record) => {
+  records.forEach((record, index) => {
     const distance = Math.abs(record - query);
-    const item = { record, distance };
+    const item = { index, record, distance };
     res.push(item);
-    res.sort((a, b) => a.distance < b.distance);
+    res.sort((a, b) => a.distance - b.distance);
     if (res.length > topK) res.pop();
   });
   return res;
@@ -46,8 +46,12 @@ if (!module.parent) {
   let count = 0;
   queries.forEach((query) => {
     let results = knnBFSearch(query, records, topK);
-    results = results.map((result) => result.record + ':' + result.distance);
-    let line = query + '|' + results.join(',');
+    // results = results.map((result) =>
+    //                       result.record.toFixed(6) +
+    //                       ':' + result.distance.toFixed(6));
+    results = results.map((result) => '' + result.index);
+    // let line = query.toFixed(6) + '|' + results.join(',');
+    let line = results.join(',');
 
     ++count;
     console.error('processing ' + (count + ' :') + query);
