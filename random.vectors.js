@@ -1,10 +1,11 @@
+#! /usr/bin/env babel-node --presets es2015
 function randomDouble(low, high) {
   const diff = high - low;
   return low + Math.random() * diff;
 }
 
 function generateData(N, low, high) {
-  let out = [];
+  const out = [];
   for (let i = 0; i < N; ++i) {
     out.push(randomDouble(low, high));
   }
@@ -12,7 +13,7 @@ function generateData(N, low, high) {
 }
 
 function printUsageAndExit() {
-  console.log('Usage: babel-node gen.js <N> <low> <high>');
+  console.log('Usage: random.vectors.js <N> <low> <high>');
   console.log('  generate <N> double range from <low> to <high>.');
   console.log('  <N> is a positive integer.');
   console.log('  <low> and <high> are number.');
@@ -25,7 +26,7 @@ if (!module.parent) {
     printUsageAndExit();
   }
 
-  const N = parseInt(process.argv[2]);
+  const N = parseInt(process.argv[2], 10);
   const low = parseFloat(process.argv[3]);
   const high = parseFloat(process.argv[4]);
 

@@ -18,10 +18,10 @@ vector<double> readNumbers(const string& filename) {
 }
 
 void printUsageAndExit() {
-  cerr << "Usage node knn.bf.js <datasetFile> <queriesFile> <topK>" << endl
+  cout << "Usage node knn.bf.js <datasetFile> <queriesFile> <topK>" << endl
        << "  Foreach query in <queriesFile> print <topK> nearest neighbor" << endl
        << "  in <datasetFile> and print to stdout." << endl;
-  exit(1);
+  exit(0);
 }
 
 struct Candidate {

@@ -1,3 +1,4 @@
+#! /usr/bin/env babel-node --presets es2015
 import fs from 'fs';
 
 function readNumbers(filename) {
@@ -8,14 +9,14 @@ function readNumbers(filename) {
 }
 
 function printUsageAndExit() {
-  console.log('Usage node knn.bf.js <datasetFile> <queriesFile> <topK>');
-  console.log('  Foreach query in <queriesFile> print <topK> nearest neighbor');
-  console.log('  in <datasetFile> and print to stdout.');
-  process.exit();
+  console.error('Usage: knn.bf.js <datasetFile> <queriesFile> <topK>');
+  console.error('  Foreach query in <queriesFile> print <topK> nearest neighbor');
+  console.error('  in <datasetFile> and print to stdout.');
+  process.exit(1);
 }
 
 function knnBFSearch(query, records, topK) {
-  let res = [];
+  const res = [];
   records.forEach((record, index) => {
     const distance = Math.abs(record - query);
     const item = { index, record, distance };
@@ -34,7 +35,7 @@ if (!module.parent) {
 
   const datasetFile = process.argv[2];
   const queriesFile = process.argv[3];
-  const topK = parseInt(process.argv[4]);
+  const topK = parseInt(process.argv[4], 10);
 
   if (isNaN(topK)) {
     printUsageAndExit();
@@ -45,16 +46,12 @@ if (!module.parent) {
 
   let count = 0;
   queries.forEach((query) => {
-    let results = knnBFSearch(query, records, topK);
-    // results = results.map((result) =>
-    //                       result.record.toFixed(6) +
-    //                       ':' + result.distance.toFixed(6));
-    results = results.map((result) => '' + result.index);
-    // let line = query.toFixed(6) + '|' + results.join(',');
-    let line = results.join(',');
-
     ++count;
-    console.error('processing ' + (count + ' :') + query);
+    console.error('processing ' + (count + ': ') + query);
+
+    let results = knnBFSearch(query, records, topK);
+    results = results.map((result) => '' + result.index);
+    const line = query.toFixed(6) + ':' + results.join(',');
     console.log(line);
   });
 }
