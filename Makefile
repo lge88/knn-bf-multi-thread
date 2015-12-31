@@ -1,6 +1,6 @@
 N_RECORDS=1000000
 N_QUERIES=100
-TOPK=10
+TOPK=100
 
 INPUT_PATH=data/input
 RECORDS=$(INPUT_PATH)/records_$(N_RECORDS).txt
@@ -37,12 +37,16 @@ $(CPP_ST): $(INPUT_DATA) knn.bf
 $(CPP_MT): $(INPUT_DATA) knn.bf.mt
 	time ./knn.bf.mt $(RECORDS) $(QUERIES) $(TOPK) > $@
 
-check: $(REF) $(CPP_ST) $(CPP_MT)
-	diff $(REF) $(CPP_ST)
-	diff $(REF) $(CPP_MT)
+check: $(CPP_ST) $(CPP_MT)
+	diff $(CPP_ST) $(CPP_MT)
 
-clean:
-	rm -fr knn.bf knn.bf.mt $(INPUT_PATH)/* $(OUTPUT_PATH)/*
+clean-exe:
+	rm -fr knn.bf knn.bf.mt
+
+clean-data:
+	rm -fr $(INPUT_PATH)/* $(OUTPUT_PATH)/*
+
+clean: clean-exe clean-data
 
 $(REF): $(INPUT_DATA) knn.bf.js
 	time ./knn.bf.js $(RECORDS) $(QUERIES) $(TOPK) > $@
@@ -52,4 +56,4 @@ ref: $(REF)
 st: $(CPP_ST)
 mt: $(CPP_MT)
 
-.PHONY: check clean ref mt st
+.PHONY: check clean ref mt st $(CPP_ST) $(CPP_MT)
