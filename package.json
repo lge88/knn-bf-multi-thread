@@ -1,0 +1,22 @@
+{
+  "name": "knn-bf-multi-thread",
+  "version": "1.0.0",
+  "description": "",
+  "main": "knn.bf.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lge88/knn-bf-multi-thread.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lge88/knn-bf-multi-thread/issues"
+  },
+  "homepage": "https://github.com/lge88/knn-bf-multi-thread#readme",
+  "dependencies": {
+    "babel-preset-es2015": "^6.3.13"
+  }
+}
