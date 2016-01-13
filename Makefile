@@ -1,64 +1,117 @@
-N_RECORDS=1000000
-N_QUERIES=100
-TOPK=100
+N_RECORDS=10000
+N_QUERIES=5
+TOPK=10
+LOW=0
+HIGH=100
 
-INPUT_PATH=data/input
+MAKEFILE_PATH=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+INPUT_PATH=$(MAKEFILE_PATH)input
 RECORDS=$(INPUT_PATH)/records_$(N_RECORDS).txt
 QUERIES=$(INPUT_PATH)/queries_$(N_QUERIES).txt
-INPUT_DATA=$(RECORDS) $(QUERIES)
 
-OUTPUT_PATH=data/output
-REF=$(OUTPUT_PATH)/ref_d$(N_RECORDS)_q$(N_QUERIES)_k$(TOPK).txt
-CPP_ST=$(OUTPUT_PATH)/cpp_st_d$(N_RECORDS)_q$(N_QUERIES)_k$(TOPK).txt
-CPP_MT=$(OUTPUT_PATH)/cpp_mt_d$(N_RECORDS)_q$(N_QUERIES)_k$(TOPK).txt
+JS_ST=js_knn_bf_st
+CPP_ST=cpp_knn_bf_st
+CPP_MT=cpp_knn_bf_mt
+GO_ST=go_knn_bf_st
 
+OUTPUT_PATH=$(MAKEFILE_PATH)output
+OUT_JS_ST=$(OUTPUT_PATH)/$(JS_ST)_r$(N_RECORDS)_q$(N_QUERIES)_k$(TOPK).txt
+OUT_CPP_ST=$(OUTPUT_PATH)/$(CPP_ST)_r$(N_RECORDS)_q$(N_QUERIES)_k$(TOPK).txt
+OUT_CPP_MT=$(OUTPUT_PATH)/$(CPP_MT)_r$(N_RECORDS)_q$(N_QUERIES)_k$(TOPK).txt
+OUT_GO_ST=$(OUTPUT_PATH)/$(GO_ST)_r$(N_RECORDS)_q$(N_QUERIES)_k$(TOPK).txt
+
+EXE_PATH=$(MAKEFILE_PATH)exes
+EXE_JS_ST=$(EXE_PATH)/$(JS_ST)
+EXE_CPP_ST=$(EXE_PATH)/$(CPP_ST)
+EXE_CPP_MT=$(EXE_PATH)/$(CPP_MT)
+EXE_GO_ST=$(EXE_PATH)/$(GO_ST)
+
+COPY=cp
+CHMOD=chmod
+RANDOM_VECTOR=$(MAKEFILE_PATH)bin/random_vectors
 CC=g++
 CPPFLAGS=-std=c++0x -O3 -pthread
 GO=go
 GOFLAGS=
 
-default: check
+default: exes
+
+debug-path:
+	echo $(MAKEFILE_PATH)
 
 $(RECORDS):
-	./random.vectors.js $(N_RECORDS) 0 100 > $@
+	$(RANDOM_VECTOR) $(N_RECORDS) $(LOW) $(HIGH) > $@
 
 $(QUERIES):
-	./random.vectors.js $(N_QUERIES) 0 100 > $@
+	$(RANDOM_VECTOR) $(N_QUERIES) $(LOW) $(HIGH) > $@
 
+$(EXE_JS_ST): $(JS_ST).js
+	$(COPY) $^ $@
+	$(CHMOD) +x $@
+
+$(EXE_CPP_ST): $(CPP_ST).cpp
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+$(EXE_CPP_MT): $(CPP_MT).cpp
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+$(EXE_GO_ST): $(GO_ST).go
+	$(GO) build $(GOFLAGS) -o $@ $^
+
+$(OUT_JS_ST): $(INPUT_DATA) $(EXE_JS_ST)
+	time $(EXE_JS_ST) $(RECORDS) $(QUERIES) $(TOPK) > $@
+
+$(OUT_CPP_ST): $(INPUT_DATA) $(EXE_CPP_ST)
+	time $(EXE_CPP_ST) $(RECORDS) $(QUERIES) $(TOPK) > $@
+
+$(OUT_CPP_MT): $(INPUT_DATA) $(EXE_CPP_MT)
+	time $(EXE_CPP_MT) $(RECORDS) $(QUERIES) $(TOPK) > $@
+
+$(OUT_GO_ST): $(INPUT_DATA) $(EXE_GO_ST)
+	time $(EXE_GO_ST) $(RECORDS) $(QUERIES) $(TOPK) > $@
+
+INPUT_DATA+=$(RECORDS)
+INPUT_DATA+=$(QUERIES)
 input: $(INPUT_DATA)
 
-knn.bf: knn.bf.cpp
-	$(CC) $(CPPFLAGS) $^ -o $@
+EXES+=$(EXE_JS_ST)
+EXES+=$(EXE_CPP_ST)
+EXES+=$(EXE_CPP_MT)
+EXES+=$(EXE_GO_ST)
+exes: $(EXES)
 
-knn.bf.mt: knn.bf.mt.cpp
-	$(CC) $(CPPFLAGS) $^ -o $@
+OUTPUT_DATA+=$(OUT_JS_ST)
+OUTPUT_DATA+=$(OUT_CPP_ST)
+OUTPUT_DATA+=$(OUT_CPP_MT)
+OUTPUT_DATA+=$(OUT_GO_ST)
+output: $(OUTPUT_DATA)
+out-js-st: $(OUT_JS_ST)
+out-cpp-st: $(OUT_CPP_ST)
+out-cpp-mt: $(OUT_CPP_MT)
+out-go-st: $(OUT_GO_ST)
 
-knn.bf.go: knn.bf.go.go
-	$(GO) build $(GOFLAGS) $^
+check-js-st: $(OUT_JS_ST) $(OUT_CPP_ST)
+	diff $(OUT_JS_ST) $(OUT_CPP_ST)
 
-$(CPP_ST): $(INPUT_DATA) knn.bf
-	time ./knn.bf $(RECORDS) $(QUERIES) $(TOPK) > $@
+check-cpp-mt: $(OUT_CPP_MT) $(OUT_CPP_ST)
+	diff $(OUT_CPP_MT) $(OUT_CPP_ST)
 
-$(CPP_MT): $(INPUT_DATA) knn.bf.mt
-	time ./knn.bf.mt $(RECORDS) $(QUERIES) $(TOPK) > $@
+check-go-st: $(OUT_GO_ST) $(OUT_CPP_ST)
+	diff $(OUT_GO_ST) $(OUT_CPP_ST)
 
-check: $(CPP_ST) $(CPP_MT)
-	diff $(CPP_ST) $(CPP_MT)
+check-all: check-js-st check-cpp-mt check-go-st
 
-clean-exe:
-	rm -fr knn.bf knn.bf.mt
+clean-exes:
+	rm -fr $(EXE_PATH)/*
 
-clean-data:
-	rm -fr $(INPUT_PATH)/* $(OUTPUT_PATH)/*
+clean-input:
+	rm -fr $(INPUT_PATH)/*
 
-clean: clean-exe clean-data
+clean-output:
+	rm -fr $(OUTPUT_PATH)/*
 
-$(REF): $(INPUT_DATA) knn.bf.js
-	time ./knn.bf.js $(RECORDS) $(QUERIES) $(TOPK) > $@
+clean-data: clean-input clean-output
 
-ref: $(REF)
+clean: clean-exes clean-data
 
-st: $(CPP_ST)
-mt: $(CPP_MT)
-
-.PHONY: check clean ref mt st $(CPP_ST) $(CPP_MT)
+.PHONY: input exes output check-all clean

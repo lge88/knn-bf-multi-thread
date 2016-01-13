@@ -15,6 +15,9 @@ type Candidate struct {
 }
 
 func (self Candidate) Less(other llrb.Item) bool {
+  if (self.distance == other.(Candidate).distance) {
+    return self.index < other.(Candidate).index;
+  }
 	return self.distance < other.(Candidate).distance
 }
 
@@ -98,19 +101,34 @@ func knnBFSearch(
   return s.ToSlice()
 }
 
+func printUsageAndExit() {
+  fmt.Println("Usage: go_knn_bf_st <datasetFile> <queriesFile> <topK>")
+  fmt.Println("  Foreach query in <queriesFile> print <topK> nearest neighbor")
+  fmt.Println("  in <datasetFile> and print to stdout.")
+  os.Exit(1);
+}
+
 func main() {
-  queries := readNumbers("./data/input/queries_5.txt")
-  records := readNumbers("./data/input/records_100.txt")
-  var topK uint8 = 2
+  argc := len(os.Args)
+  if argc < 4 {
+    printUsageAndExit()
+  }
 
+  records := readNumbers(os.Args[1])
+  queries := readNumbers(os.Args[2])
+  topK, _ := strconv.ParseUint(os.Args[3], 10, 8)
+
+  var count uint64 = 0
   for _, query := range queries {
-    candidates := knnBFSearch(query, records, topK)
+    count += 1
+    fmt.Fprintln(os.Stderr, "processing", count, ":", query)
 
-    fmt.Print(query)
-    fmt.Print(" ")
+    candidates := knnBFSearch(query, records, uint8(topK))
+
+    fmt.Printf("%.6f", query)
+    fmt.Print(":")
     for i, candidate := range candidates {
-      if i > 0 { fmt.Print(" ") }
-      // fmt.Print(candidate.index, candidate.record, candidate.distance)
+      if i > 0 { fmt.Print(",") }
       fmt.Print(candidate.index)
     }
     fmt.Println()

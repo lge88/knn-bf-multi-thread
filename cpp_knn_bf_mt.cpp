@@ -41,6 +41,9 @@ struct Candidate {
 
 struct CandidateComp {
   bool operator() (const Candidate& lhs, const Candidate& rhs) const {
+    if (lhs.distance == rhs.distance) {
+      return lhs.index < rhs.index;
+    }
     return lhs.distance < rhs.distance;
   }
 };
