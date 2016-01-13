@@ -74,18 +74,7 @@ func readNumbers(filename string) []float64 {
 }
 
 func writeNumbers(nums []float64, writer *bufio.Writer) {
-	for _, num := range nums {
-		// fmt.Fprintf(writer, "%d\t%e\n", i, num)
-		fmt.Fprintln(writer, num)
-		// writer.WriteString(fmt.Sprintf("%d\t%e\n", i, num))
-	}
-}
-
-func writeResultLine(candidates []Candidate, writer *bufio.Writer) {
-	for i, candidate := range candidates {
-		if i > 0 { fmt.Fprint(writer, " ") }
-		fmt.Fprint(writer, candidate.index)
-	}
+	for _, num := range nums { fmt.Fprintln(writer, num) }
 }
 
 func knnBFSearch(
@@ -125,8 +114,7 @@ func main() {
 
 		candidates := knnBFSearch(query, records, uint8(topK))
 
-		fmt.Printf("%.6f", query)
-		fmt.Print(":")
+		fmt.Printf("%.6f:", query)
 		for i, candidate := range candidates {
 			if i > 0 { fmt.Print(",") }
 			fmt.Print(candidate.index)
