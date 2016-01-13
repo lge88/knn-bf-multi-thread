@@ -14,6 +14,8 @@ CPP_MT=$(OUTPUT_PATH)/cpp_mt_d$(N_RECORDS)_q$(N_QUERIES)_k$(TOPK).txt
 
 CC=g++
 CPPFLAGS=-std=c++0x -O3 -pthread
+GO=go
+GOFLAGS=
 
 default: check
 
@@ -30,6 +32,9 @@ knn.bf: knn.bf.cpp
 
 knn.bf.mt: knn.bf.mt.cpp
 	$(CC) $(CPPFLAGS) $^ -o $@
+
+knn.bf.go: knn.bf.go.go
+	$(GO) build $(GOFLAGS) $^
 
 $(CPP_ST): $(INPUT_DATA) knn.bf
 	time ./knn.bf $(RECORDS) $(QUERIES) $(TOPK) > $@
