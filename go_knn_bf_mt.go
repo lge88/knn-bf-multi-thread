@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"math"
 	"strconv"
+  "sync"
 	"github.com/petar/GoLLRB/llrb"
 )
 
@@ -82,53 +83,71 @@ func knnBFSearchRoutine(
 	records []float64,
 	topK uint8,
   startIndex uint64,
-  endIndex uint64,
-  output chan []Candidate) {
+  endIndex uint64) []Candidate {
 	s := createCandidateSet()
 	for i, record := range records[startIndex:endIndex+1] {
 		distance := math.Abs(record - query)
 		s.Insert(Candidate{record, distance, startIndex + uint64(i)})
 		if s.Len() > topK { s.RemoveLast() }
 	}
-  output <- s.ToSlice()
+  candidates := s.ToSlice();
+  return candidates
 }
 
 func knnBFSearch(
 	query float64,
 	records []float64,
 	topK uint8) []Candidate {
-  resultChan := make(chan []Candidate)
-  numGoRoutines := uint64(10)
-  numRecords := uint64(len(records))
+  numGoRoutines := 8
+
+  var wg sync.WaitGroup
+  wg.Add(numGoRoutines)
+
+  numRecords := len(records)
   base := numRecords / numGoRoutines
   remains := numRecords % numGoRoutines
-
-  startIndex := uint64(0)
-  for startIndex < numGoRoutines {
+  resultChan := make(chan []Candidate)
+  set := createCandidateSet()
+  startIndex := 0
+  for i := 1; i <= numGoRoutines; i++ {
     endIndex := startIndex + base - 1
     if remains > 0 {
       endIndex += 1
       remains -= 1
     }
-    go knnBFSearchRoutine(
-      query,
-      records,
-      topK,
-      startIndex,
-      endIndex,
-      resultChan)
+
+    go func(s int, e int) {
+      defer wg.Done()
+      candidates := knnBFSearchRoutine(
+        query,
+        records,
+        topK,
+        uint64(s),
+        uint64(e))
+      resultChan <- candidates
+    }(startIndex, endIndex)
+
+    startIndex = endIndex + 1
   }
 
-  s := createCandidateSet()
-
-  for candidates := range resultChan {
-    for _, candidate := range candidates {
-      s.Insert(candidate)
-      if s.Len() > topK { s.RemoveLast() }
+  var wg2 sync.WaitGroup
+  wg2.Add(1)
+  go func() {
+    defer wg2.Done()
+    for candidates := range resultChan {
+      for _, candidate := range candidates {
+        set.Insert(candidate)
+        if set.Len() > topK { set.RemoveLast() }
+      }
     }
-  }
+  }()
 
-  return s.ToSlice()
+  wg.Wait()
+  close(resultChan);
+
+  wg2.Wait()
+
+  return set.ToSlice()
 }
 
 func printUsageAndExit() {
